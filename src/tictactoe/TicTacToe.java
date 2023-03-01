@@ -2,13 +2,17 @@ package tictactoe;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
+import java.awt.event.KeyEvent;
+import java.text.MessageFormat;
+import java.util.*;
 import java.util.List;
-import java.util.Objects;
+import javax.swing.Timer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TicTacToe extends JFrame {
+
     public TicTacToe() {
         setTitle("Tic Tac Toe");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -19,6 +23,7 @@ public class TicTacToe extends JFrame {
         setLocationRelativeTo(null);
         //setLayout(null); // sets absolute positioning of components
     }
+
     public static boolean isEmpty(String[][] matrix) {
         for (String[] array : matrix
         ) {
@@ -63,22 +68,31 @@ public class TicTacToe extends JFrame {
     }
     public static void SelectorOfPlayingModus(JButton ButtonPlayer1, JButton ButtonPlayer2, List<JButton> array, JLabel LabelStatus) {
         if (ButtonPlayer1.getText().equals("Robot") && ButtonPlayer2.getText().equals("Robot")) {
-            while (LabelStatus.getText().equals("Game in progress") || LabelStatus.getText().equals("Game is not started")) {
-                if (decider(array)[0] <= decider(array)[1]) {
-                    Move move = FinderBestMove(ArrayToMatrixConverter(array), "X", "O");
-                    ArrayUpdater(array, move.row, move.column, "X");
-                    LabelStatus.setText(StatusProvider(array, ButtonPlayer1, ButtonPlayer2));
-                } else {
-                    Move move = FinderBestMove(ArrayToMatrixConverter(array), "O", "X");
-                    ArrayUpdater(array, move.row, move.column, "O");
-                    LabelStatus.setText(StatusProvider(array, ButtonPlayer1, ButtonPlayer2));
-                }
-            }
+                   int delay=1000;// wait for second
+                    Timer timer = new Timer(delay, new AbstractAction() {
+                        @Override
+                        public void actionPerformed(ActionEvent ae) {
+
+                            if (decider(array)[0] <= decider(array)[1] && isEmpty(ArrayToMatrixConverter(array))) {
+                                Move move = FinderBestMove(ArrayToMatrixConverter(array), "X", "O");
+                                ArrayUpdater(array, move.row, move.column, "X");
+                                LabelStatus.setText(StatusProvider(array, ButtonPlayer1, ButtonPlayer2));
+                            } else if (decider(array)[0] > decider(array)[1] && isEmpty(ArrayToMatrixConverter(array))) {
+                                Move move = FinderBestMove(ArrayToMatrixConverter(array), "O", "X");
+                                ArrayUpdater(array, move.row, move.column, "O");
+                                LabelStatus.setText(StatusProvider(array, ButtonPlayer1, ButtonPlayer2));
+                            }
+                        }
+                    });
+                   // timer.setRepeats(false);
+                    timer.start();
+
         } else if (ButtonPlayer1.getText().equals("Robot") && ButtonPlayer2.getText().equals("Human")) {
             Move move = FinderBestMove(ArrayToMatrixConverter(array), "X", "O");
             ArrayUpdater(array, move.row, move.column, "X");
             LabelStatus.setText(StatusProvider(array, ButtonPlayer1, ButtonPlayer2));
             ButtonsActiver(array, LabelStatus, "O", ButtonPlayer1, ButtonPlayer2);
+
         } else if (ButtonPlayer1.getText().equals("Human") && ButtonPlayer2.getText().equals("Robot")) {
             ButtonsActiver(array, LabelStatus, "X", ButtonPlayer1, ButtonPlayer2);
         } else {
@@ -87,35 +101,41 @@ public class TicTacToe extends JFrame {
     }
 
     public static void ButtonsActiver(List<JButton> array, JLabel LabelStatus, String var, JButton ButtonPlayer1, JButton ButtonPlayer2) {
-        if (var.equals("O")) {
             for (JButton button : array
             ) {
                 button.addActionListener(e -> {
                     button.setText(var);
                     LabelStatus.setText(StatusProvider(array, ButtonPlayer1, ButtonPlayer2));
-                    if (decider(array)[0] <= decider(array)[1]) {
-                        Move move = FinderBestMove(ArrayToMatrixConverter(array), "X", "O");
-                        ArrayUpdater(array, move.row, move.column, "X");
-                        LabelStatus.setText(StatusProvider(array, ButtonPlayer1, ButtonPlayer2));
+
+                    int delay=1000;// wait for second
+                    Timer timer;// wait for second
+                    if (var.equals("O")) {
+                        timer = new Timer(delay, new AbstractAction() {
+                            @Override
+                            public void actionPerformed(ActionEvent ae) {
+                                Move move = FinderBestMove(ArrayToMatrixConverter(array), "X", "O");
+                                ArrayUpdater(array, move.row, move.column, "X");
+
+                            }
+                        });
+
+                    } else {
+                        timer = new Timer(delay, new AbstractAction() {
+                            @Override
+                            public void actionPerformed(ActionEvent ae) {
+                                Move move = FinderBestMove(ArrayToMatrixConverter(array), "O", "X");
+                                ArrayUpdater(array, move.row, move.column, "O");
+                                LabelStatus.setText(StatusProvider(array, ButtonPlayer1, ButtonPlayer2));
+                            }
+                        });
                     }
+
+                    timer.setRepeats(false);
+                    timer.start();
+
                 });
             }
-        } else {
-            for (JButton button : array
-            ) {
-                button.addActionListener(e -> {
-                    button.setText(var);
-                    LabelStatus.setText(StatusProvider(array, ButtonPlayer1, ButtonPlayer2));
-                    if (decider(array)[0] > decider(array)[1]) {
-                        Move move = FinderBestMove(ArrayToMatrixConverter(array), "O", "X");
-                        ArrayUpdater(array, move.row, move.column, "O");
-                        LabelStatus.setText(StatusProvider(array, ButtonPlayer1, ButtonPlayer2));
-                    }
-                });
 
-
-            }
-        }
 
     }
     public static void ButtonsActiver(List<JButton> arrayOfButtons, JLabel LabelStatus, JButton ButtonPlayer1, JButton ButtonPlayer2) {
@@ -152,7 +172,9 @@ public class TicTacToe extends JFrame {
         String s = " ";
         String[][] matrix = ArrayToMatrixConverter(array);
         if (Tester(matrix, "O")) {
-            s = "O wins";
+            s = MessageFormat.format(
+                    "The {0} Player ({1}) wins",
+                    ButtonPlayer2.getText(), "O");
             for (JButton button : array
             ) {
                 button.setEnabled(false);
@@ -160,7 +182,9 @@ public class TicTacToe extends JFrame {
             ButtonPlayer1.setEnabled(true);
             ButtonPlayer2.setEnabled(true);
         } else if (Tester(matrix, "X")) {
-            s = "X wins";
+            s = MessageFormat.format(
+                    "The {0} Player ({1}) wins",
+                    ButtonPlayer1.getText(), "X");
             for (JButton button : array
             ) {
                 button.setEnabled(false);
@@ -173,7 +197,16 @@ public class TicTacToe extends JFrame {
                 ButtonPlayer1.setEnabled(true);
                 ButtonPlayer2.setEnabled(true);
             } else {
-                s = "Game in progress";
+                if (decider(array)[0] <= decider(array)[1]) {
+                    s = MessageFormat.format(
+                            "The turn of {0} Player ({1})",
+                            ButtonPlayer1.getText(), "X");
+                } else {
+                    s = MessageFormat.format(
+                            "The turn of {0} Player ({1})",
+                            ButtonPlayer2.getText(), "O");
+                }
+
             }
         }
         return s;
@@ -266,6 +299,40 @@ public class TicTacToe extends JFrame {
 
         JPanel panel3 = new JPanel(new BorderLayout());
 
+        JMenuBar menuBar = new JMenuBar();
+        JMenu MenuGame = new JMenu("Game");
+        MenuGame.setName("MenuGame");
+        MenuGame.setMnemonic(KeyEvent.VK_F);// to pop up the file menu: appears, use the key: Alt + f
+
+        JMenuItem MenuHumanHuman = new JMenuItem("Human vs Human");
+        MenuHumanHuman.setName("MenuHumanHuman");
+        JMenuItem MenuHumanRobot = new JMenuItem("Human vs Robot");
+        MenuHumanRobot.setName("MenuHumanRobot");
+        JMenuItem MenuRobotHuman = new JMenuItem("Robot vs Human");
+        MenuRobotHuman.setName("MenuRobotHuman");
+        JMenuItem MenuRobotRobot = new JMenuItem("Robot vs Robot");
+        MenuRobotRobot.setName("MenuRobotRobot");
+        JMenuItem MenuExit = new JMenuItem("Exit");
+        MenuExit.setName("MenuExit");
+        // you can rewrite it with a lambda if you prefer this
+        MenuExit.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent event) {
+                System.exit(0);
+            }
+        });
+
+        MenuGame.add(MenuHumanHuman);
+        MenuGame.add(MenuHumanRobot);
+        MenuGame.add(MenuRobotHuman);
+        MenuGame.add(MenuRobotRobot);
+
+        MenuGame.addSeparator();//draw a separator line
+        MenuGame.add(MenuExit);
+
+        menuBar.add(MenuGame);
+        setJMenuBar(menuBar); // add menu to the window
+
+
         JLabel LabelStatus = new JLabel();
         LabelStatus.setName("LabelStatus");
         LabelStatus.setText("Game is not started");
@@ -353,6 +420,27 @@ public class TicTacToe extends JFrame {
 
         List<JButton> arrayOfButtons = List.of(ButtonA1, ButtonA2, ButtonA3, ButtonB1, ButtonB2, ButtonB3, ButtonC1,
                 ButtonC2, ButtonC3);
+        List<JMenuItem> menuItems = List.of(MenuRobotHuman, MenuRobotRobot, MenuHumanRobot, MenuHumanHuman);
+        for (JMenuItem menuItem : menuItems
+        ) {
+            menuItem.addActionListener(e -> {
+                ButtonPlayer1.setText(Arrays.stream(menuItem.getText().split("\\s+")).toList().get(0));
+                ButtonPlayer2.setText(Arrays.stream(menuItem.getText().split("\\s+")).toList().get(2));
+                ButtonPlayer1.setEnabled(false);
+                ButtonPlayer2.setEnabled(false);
+                for (JButton button : arrayOfButtons
+                ) {
+                    button.setText(" ");
+                    button.setEnabled(true);
+                }
+                ButtonStartReset.setText("Reset");
+                LabelStatus.setText(MessageFormat.format(
+                        "The turn of {0} Player ({1})",
+                        ButtonPlayer1.getText(), "X"));
+
+                SelectorOfPlayingModus(ButtonPlayer1, ButtonPlayer2, arrayOfButtons, LabelStatus);
+            });
+        }
         ButtonPlayer1.addActionListener(e -> {
             ButtonPlayer1.setText(ButtonPlayer1.getText().equals("Human") ? "Robot" : "Human");
             for (JButton button : arrayOfButtons
@@ -397,7 +485,9 @@ public class TicTacToe extends JFrame {
                 }
                 ButtonPlayer1.setEnabled(false);
                 ButtonPlayer2.setEnabled(false);
-                LabelStatus.setText("Game in progress");
+                LabelStatus.setText(MessageFormat.format(
+                        "The turn of {0} Player ({1})",
+                        ButtonPlayer1.getText(), "X"));
 
                 SelectorOfPlayingModus(ButtonPlayer1, ButtonPlayer2, arrayOfButtons, LabelStatus);
             }
@@ -408,5 +498,6 @@ public class TicTacToe extends JFrame {
     public static void main(String[] args) {
         new TicTacToe();
     }
+
 
 }
