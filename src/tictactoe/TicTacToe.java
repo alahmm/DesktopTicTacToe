@@ -99,28 +99,30 @@ public class TicTacToe extends JFrame {
                 timer.start();
 
         } else if (ButtonPlayer1.getText().equals("Robot") && ButtonPlayer2.getText().equals("Human")) {
+
             Move move = FinderBestMove(ArrayToMatrixConverter(array), "X", "O");
             ArrayUpdater(array, move.row, move.column, "X");
             LabelStatus.setText(StatusProvider(array, ButtonPlayer1, ButtonPlayer2));
-            ButtonsActiver(array, LabelStatus, "O", ButtonPlayer1, ButtonPlayer2);
+            RobotVsHuman(array, LabelStatus, ButtonPlayer1, ButtonPlayer2);
 
         } else if (ButtonPlayer1.getText().equals("Human") && ButtonPlayer2.getText().equals("Robot")) {
-            ButtonsActiver(array, LabelStatus, "X", ButtonPlayer1, ButtonPlayer2);
+            HumanVsRobot(array, LabelStatus, ButtonPlayer1, ButtonPlayer2);
         } else {
             ButtonsActiver(array, LabelStatus, ButtonPlayer1, ButtonPlayer2);
         }
     }
-
-    public static void ButtonsActiver(List<JButton> array, JLabel LabelStatus, String var, JButton ButtonPlayer1, JButton ButtonPlayer2) {
-            for (JButton button : array
-            ) {
-                button.addActionListener(e -> {
-                    button.setText(var);
+    public static void RobotVsHuman(List<JButton> array, JLabel LabelStatus, JButton ButtonPlayer1, JButton ButtonPlayer2) {
+        final int[] counter = {0};
+        final boolean[] running = {true};
+        for (JButton button : array
+        ) {
+            button.addActionListener(e -> {
+                if (decider(array)[0] > decider(array)[1]) {
+                    button.setText("O");
                     LabelStatus.setText(StatusProvider(array, ButtonPlayer1, ButtonPlayer2));
-
-                    int delay=1000;// wait for second
-                    if (var.equals("O")) {
-                        Timer timer = new Timer(delay, new AbstractAction() {
+                    if (decider(array)[0] <= decider(array)[1]) {
+                        counter[0]++;
+                        Timer timer = new Timer(1000, new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent ae) {
                                 Move move = FinderBestMove(ArrayToMatrixConverter(array), "X", "O");
@@ -130,25 +132,43 @@ public class TicTacToe extends JFrame {
                         });
                         timer.setRepeats(false);
                         timer.start();
-                    } else {
-                       Timer timer = new Timer(delay, new AbstractAction() {
-                            @Override
-                            public void actionPerformed(ActionEvent ae) {
-                                Move move = FinderBestMove(ArrayToMatrixConverter(array), "O", "X");
-                                ArrayUpdater(array, move.row, move.column, "O");
-                                LabelStatus.setText(StatusProvider(array, ButtonPlayer1, ButtonPlayer2));
-                            }
-                        });
-                        timer.setRepeats(false);
-                        timer.start();
                     }
+                    if (counter[0] == 3) {
+                        running[0] = false;
+                    }
+                    if(!running[0]){
+                        ((Timer)e.getSource()).stop();
+                    }
+                }
+
+            });
+        }
 
 
-
-                });
+    }
+    public static void HumanVsRobot(List<JButton> array, JLabel LabelStatus, JButton ButtonPlayer1, JButton ButtonPlayer2) {
+        for (JButton button : array
+            ) {
+                button.addActionListener(new ActionListener(){
+                    public void actionPerformed(ActionEvent e) {
+                        if (decider(array)[0] <= decider(array)[1]) {
+                            button.setText("X");
+                            LabelStatus.setText(StatusProvider(array, ButtonPlayer1, ButtonPlayer2));
+                            if (decider(array)[0] > decider(array)[1]) {
+                                Timer timer = new Timer(1000, new AbstractAction() {
+                                    @Override
+                                    public void actionPerformed(ActionEvent ae) {
+                                        Move move = FinderBestMove(ArrayToMatrixConverter(array), "O", "X");
+                                        ArrayUpdater(array, move.row, move.column, "O");
+                                        LabelStatus.setText(StatusProvider(array, ButtonPlayer1, ButtonPlayer2));
+                                    }
+                                });
+                                timer.setRepeats(false);
+                                timer.start();
+                            }
+                        }
+                    }});
             }
-
-
     }
     public static void ButtonsActiver(List<JButton> arrayOfButtons, JLabel LabelStatus, JButton ButtonPlayer1, JButton ButtonPlayer2) {
         for (JButton button : arrayOfButtons
@@ -170,15 +190,6 @@ public class TicTacToe extends JFrame {
         }
         return matrix;
     }
-    public static List<JButton> MatrixToArrayConverter(String[][] matrix) {
-        List<JButton> array = new ArrayList<>();
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                array.get(j + i * 3).setText(matrix[i][j]);
-            }
-        }
-        return array;
-    }
     public static String StatusProvider(List<JButton> array,
                                         JButton ButtonPlayer1, JButton ButtonPlayer2) {
         String s = " ";
@@ -190,7 +201,12 @@ public class TicTacToe extends JFrame {
             for (JButton button : array
             ) {
                 button.setEnabled(false);
+                for (ActionListener act : button.getActionListeners()
+                     ) {
+                    button.removeActionListener(act);
+                }
             }
+
             ButtonPlayer1.setEnabled(true);
             ButtonPlayer2.setEnabled(true);
         } else if (Tester(matrix, "X")) {
@@ -200,14 +216,27 @@ public class TicTacToe extends JFrame {
             for (JButton button : array
             ) {
                 button.setEnabled(false);
+                for (ActionListener act : button.getActionListeners()
+                ) {
+                    button.removeActionListener(act);
+                }
             }
             ButtonPlayer1.setEnabled(true);
             ButtonPlayer2.setEnabled(true);
         } else {
             if (!isEmpty(matrix)) {
                 s = "Draw";
+                for (JButton button : array
+                ) {
+                    button.setEnabled(false);
+                    for (ActionListener act : button.getActionListeners()
+                    ) {
+                        button.removeActionListener(act);
+                    }
+                }
                 ButtonPlayer1.setEnabled(true);
                 ButtonPlayer2.setEnabled(true);
+
             } else {
                 if (decider(array)[0] <= decider(array)[1]) {
                     s = MessageFormat.format(
@@ -470,10 +499,6 @@ public class TicTacToe extends JFrame {
                 button.setEnabled(true);
             }
         });
-/*        for (JButton button : arrayOfButtons
-        ) {
-            button.setEnabled(false);
-        }*/
         ButtonStartReset.addActionListener(e -> {
             ButtonStartReset.setText(ButtonStartReset.getText().equals("Start") ? "Reset" : "Start");
             if (ButtonStartReset.getText().equals("Start")) {
